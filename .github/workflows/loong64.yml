@@ -91,7 +91,7 @@ jobs:
       - name: Print binary SHA-256 checksums
         working-directory: cli
         run: |
-          find bin -type f | xargs sha256sum
+          find build -type f | xargs sha256sum
       - name: Inspect binary file types
         working-directory: cli
         run: |
