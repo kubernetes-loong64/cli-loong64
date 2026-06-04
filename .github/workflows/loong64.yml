@@ -63,7 +63,7 @@ jobs:
       #  run: git apply ../*.patch
       - name: Build cli
         working-directory: cli
-        run: make binary
+        run: make dev
       - name: Print binary SHA-256 checksums
         working-directory: cli
         run: |
