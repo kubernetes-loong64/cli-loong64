@@ -87,6 +87,9 @@ jobs:
       #  run: git apply ../*.patch
       - name: Build cli
         working-directory: cli
+        env:
+          GOOS: linux
+          GOARCH: loong64
         run: make -f docker.Makefile binary
       - name: Print binary SHA-256 checksums
         working-directory: cli
