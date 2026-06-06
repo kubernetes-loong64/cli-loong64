@@ -110,6 +110,12 @@ jobs:
           ./build/docker completion bash > completions/docker.bash
           ./build/docker completion fish > completions/docker.fish
           ./build/docker completion zsh  > completions/_docker.zsh
+          echo "=== docker.bash ==="
+          cat completions/docker.bash
+          echo "=== docker.fish ==="
+          cat completions/docker.fish
+          echo "=== _docker.zsh ==="
+          cat completions/_docker.zsh
       - name: Upload shell completions
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
