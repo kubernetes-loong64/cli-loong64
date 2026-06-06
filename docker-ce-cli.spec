@@ -33,7 +33,11 @@ install -m 644 completions/docker.fish %{buildroot}/usr/share/fish/vendor_comple
 mkdir -p %{buildroot}/usr/share/zsh/site-functions/
 install -m 644 completions/_docker.zsh %{buildroot}/usr/share/zsh/site-functions/_docker
 
+mkdir -p %{buildroot}/usr/share/licenses/%{name}/
+install -m 644 LICENSE %{buildroot}/usr/share/licenses/%{name}/LICENSE
+
 %files
+%license /usr/share/licenses/%{name}/LICENSE
 /usr/bin/docker
 /usr/share/bash-completion/completions/docker
 /usr/share/fish/vendor_completions.d/docker.fish

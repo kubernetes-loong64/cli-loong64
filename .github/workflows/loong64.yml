@@ -201,6 +201,7 @@ jobs:
           find ~/rpmbuild
           cp artifacts/docker ~/rpmbuild/BUILD/
           cp -r artifacts/completions ~/rpmbuild/BUILD/
+          cp LICENSE ~/rpmbuild/BUILD/
           cp docker-ce-cli.spec ~/rpmbuild/SPECS/
           rpmbuild -ba --target ${{ env.ARCH }} ~/rpmbuild/SPECS/docker-ce-cli.spec \
             --define "version ${{ env.VERSION }}" \
