@@ -482,7 +482,7 @@ jobs:
           echo "$(gpg --list-secret-keys --keyid-format LONG | grep -Eo '[A-F0-9]{40}' | head -1):6:" | gpg --import-ownertrust
       - name: Sign artifacts
         run: |
-          find loong64-artifacts -type f ! -name '*.asc' | while read -r file; do
+          find loong64-artifacts -type f | while read -r file; do
             gpg --batch --detach-sign --armor "$file"
             echo "Signed: $file"
             gpg --verify "$file".asc "$file"
