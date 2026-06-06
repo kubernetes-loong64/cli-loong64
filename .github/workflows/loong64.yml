@@ -13,6 +13,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container: debian:13
+    outputs:
+      RAW_VERSION: ${{ steps.extract.outputs.RAW_VERSION }}
+      CLI_BRANCH: ${{ steps.extract.outputs.CLI_BRANCH }}
+      RELEASE: ${{ steps.extract.outputs.RELEASE }}
+      IS_STABLE: ${{ steps.extract.outputs.IS_STABLE }}
     permissions:
       contents: read
     steps:
