@@ -9,6 +9,9 @@ Packager: 徐晓伟 <xuxiaowei@xuxiaowei.com.cn>
 %define ref_name release-loong64-v%{version}
 Source0: https://github.com/kubernetes-loong64/cli-loong64/archive/refs/tags/%{ref_name}.tar.gz
 
+# Disable strip for cross-compiled loongarch64 binary
+%define __strip /bin/true
+
 %description
 Docker CLI binary for the loong64 (LoongArch) architecture.
 
@@ -38,4 +41,3 @@ install -m 644 completions/_docker.zsh %{buildroot}/usr/share/zsh/site-functions
 /usr/share/zsh/site-functions/_docker
 
 %changelog
-#
