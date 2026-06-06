@@ -215,10 +215,30 @@ jobs:
           echo "ANOLIS_RPM_NAME=$ANOLIS_RPM_NAME"
           echo "ANOLIS_RPM_NAME=$ANOLIS_RPM_NAME" >> $GITHUB_OUTPUT
           echo "ANOLIS_RPM_NAME=$ANOLIS_RPM_NAME" >> $GITHUB_ENV
-          echo "=== RPM checksums ==="
+          echo "=== RPM file name: $ANOLIS_RPM_NAME ==="
           sha256sum rpms/$ANOLIS_RPM_NAME
           echo "=== RPM info ==="
           rpm -qpi rpms/$ANOLIS_RPM_NAME
+          echo "=== RPM contents ==="
+          rpm2cpio rpms/$ANOLIS_RPM_NAME | cpio -it
+      - name: Import GPG key
+        run: |
+          echo "${{ secrets.GPG_PRIVATE_KEY_BASE64 }}" | base64 -d | gpg --batch --import > /dev/null
+          echo "$(gpg --list-secret-keys --keyid-format LONG | grep -Eo '[A-F0-9]{40}' | head -1):6:" | gpg --import-ownertrust
+          GPG_KEY_ID=$(gpg --list-secret-keys --with-colons | grep '^sec:' | head -1 | cut -d: -f5)
+          echo "GPG_KEY_ID=$GPG_KEY_ID"
+          echo "GPG_KEY_ID=$GPG_KEY_ID" >> $GITHUB_ENV
+      - name: Sign RPM
+        run: |
+          echo "=== Signing RPM with GPG key: $GPG_KEY_ID ==="
+          rpm --addsign rpms/$ANOLIS_RPM_NAME
+          echo "=== Verifying RPM signature ==="
+          rpm --checksig rpms/$ANOLIS_RPM_NAME
+          echo "=== RPM file name: $ANOLIS_RPM_NAME ==="
+          sha256sum rpms/$ANOLIS_RPM_NAME
+          echo "=== RPM info ==="
+          rpm -qpi rpms/$ANOLIS_RPM_NAME
+          echo "=== RPM contents ==="
           rpm2cpio rpms/$ANOLIS_RPM_NAME | cpio -it
       - name: Upload RPM
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
