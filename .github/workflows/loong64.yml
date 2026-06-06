@@ -48,7 +48,7 @@ jobs:
           echo "CLI_BRANCH=$CLI_BRANCH" >> ${GITHUB_ENV}
           echo "CLI_BRANCH=$CLI_BRANCH" >> ${GITHUB_OUTPUT}
           RELEASE=$(echo $RAW_VERSION | awk -F'+' '{print $2}')
-          RELEASE=${RELEASE:-alpha}
+          RELEASE=${RELEASE:-alpha.${{ github.run_number }}}
           echo "RELEASE=$RELEASE"
           echo "RELEASE=$RELEASE" >> ${GITHUB_ENV}
           echo "RELEASE=$RELEASE" >> ${GITHUB_OUTPUT}
