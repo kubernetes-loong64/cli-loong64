@@ -99,7 +99,7 @@ jobs:
         with:
           name: cli-loong64-binaries
           path: |
-            cli/build/*
+            cli/build/docker
       - name: Export installed packages
         run: |
           dpkg -l > /tmp/installed-packages.txt
