@@ -100,6 +100,24 @@ jobs:
           name: cli-loong64-binaries
           path: |
             cli/build/docker
+      - name: Install QEMU for loong64
+        run: |
+          apt update
+          apt install -y qemu-user-static binfmt-support
+          update-binfmts --enable qemu-loongarch64
+      - name: Generate shell completions
+        working-directory: cli
+        run: |
+          mkdir -p completions
+          ./build/docker completion bash > completions/docker.bash
+          ./build/docker completion fish > completions/docker.fish
+          ./build/docker completion zsh  > completions/_docker.zsh
+      - name: Upload shell completions
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: cli-loong64-completions
+          path: |
+            cli/completions/*
       - name: Export installed packages
         run: |
           dpkg -l > /tmp/installed-packages.txt
@@ -135,20 +153,37 @@ jobs:
         with:
           name: cli-loong64-system-info
           path: loong64-artifacts
+      - name: Download shell completions
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: cli-loong64-completions
+          path: loong64-artifacts
       - name: Generate release body
         run: |
           cat > release-body.md <<'BODYEOF'
           ## Artifacts
           
-          | File        | Download                             |
-          |-------------|--------------------------------------|
-          | `docker`    | [docker](${{ env.BASE_URL }}/docker) |
+          | File            | Download                                             |
+          |-----------------|------------------------------------------------------|
+          | `docker`        | [docker](${{ env.BASE_URL }}/docker)                 |
+          | `docker.bash`   | [docker.bash](${{ env.BASE_URL }}/docker.bash)       |
+          | `docker.fish`   | [docker.fish](${{ env.BASE_URL }}/docker.fish)       |
+          | `_docker.zsh`   | [_docker.zsh](${{ env.BASE_URL }}/_docker.zsh)       |
+          
           Each file has a corresponding `.asc` detached GPG signature.
           
           ```shell
-          # Binaries
+          # Binary
           curl -LO ${{ env.BASE_URL }}/docker
           curl -LO ${{ env.BASE_URL }}/docker.asc
+          
+          # Shell completions
+          curl -LO ${{ env.BASE_URL }}/docker.bash
+          curl -LO ${{ env.BASE_URL }}/docker.bash.asc
+          curl -LO ${{ env.BASE_URL }}/docker.fish
+          curl -LO ${{ env.BASE_URL }}/docker.fish.asc
+          curl -LO ${{ env.BASE_URL }}/_docker.zsh
+          curl -LO ${{ env.BASE_URL }}/_docker.zsh.asc
           ```
           
           ## Verifying releases
