@@ -355,12 +355,30 @@ jobs:
           dpkg --info debs/$DEBIAN_DEB_NAME
           echo "=== DEB contents ==="
           dpkg --contents debs/$DEBIAN_DEB_NAME
+      - name: Import GPG key
+        run: |
+          export LANG=C.UTF-8
+          apt install -y gnupg
+          echo "${{ secrets.GPG_PRIVATE_KEY_BASE64 }}" | base64 -d | gpg --batch --import > /dev/null
+          echo "$(gpg --list-secret-keys --keyid-format LONG | grep -Eo '[A-F0-9]{40}' | head -1):6:" | gpg --import-ownertrust
+          GPG_KEY_ID=$(gpg --list-secret-keys --with-colons | grep '^sec:' | head -1 | cut -d: -f5)
+          echo "GPG_KEY_ID=$GPG_KEY_ID"
+          echo "GPG_KEY_ID=$GPG_KEY_ID" >> $GITHUB_ENV
+      - name: Sign DEB
+        run: |
+          echo "=== Signing DEB with GPG key: $GPG_KEY_ID ==="
+          gpg --detach-sign --armor --digest-algo sha256 -u "${GPG_KEY_ID}" debs/$DEBIAN_DEB_NAME
+          echo "=== Verifying DEB signature ==="
+          gpg --verify debs/$DEBIAN_DEB_NAME.asc debs/$DEBIAN_DEB_NAME
+          echo "=== DEB file name: $DEBIAN_DEB_NAME ==="
+          sha256sum debs/$DEBIAN_DEB_NAME
       - name: Upload DEB
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: cli-loong64-deb
           path: |
             debs/${{ env.DEBIAN_DEB_NAME }}
+            debs/${{ env.DEBIAN_DEB_NAME }}.asc
       - name: Export system version
         run: |
           cat /etc/os-release > /tmp/deb-debian-os-release.txt
