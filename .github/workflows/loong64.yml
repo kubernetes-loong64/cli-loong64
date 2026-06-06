@@ -162,6 +162,8 @@ jobs:
       CLI_BRANCH: ${{ needs.build.outputs.CLI_BRANCH }}
       RELEASE: ${{ needs.build.outputs.RELEASE }}
     steps:
+      - name: Install gzip
+        run: yum install -y gzip
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Extract version
@@ -243,13 +245,13 @@ jobs:
           cat > release-body.md <<'BODYEOF'
           ## Artifacts
           
-          | File            | Download                                             |
-          |-----------------|------------------------------------------------------|
-          | `docker`        | [docker](${{ env.BASE_URL }}/docker)                 |
-          | `docker.bash`   | [docker.bash](${{ env.BASE_URL }}/docker.bash)       |
-          | `docker.fish`   | [docker.fish](${{ env.BASE_URL }}/docker.fish)       |
-          | `_docker.zsh`   | [_docker.zsh](${{ env.BASE_URL }}/_docker.zsh)       |
-          | `*.loongarch64.rpm` | See release assets                                |
+          | File                | Download                                       |
+          |---------------------|------------------------------------------------|
+          | `docker`            | [docker](${{ env.BASE_URL }}/docker)           |
+          | `docker.bash`       | [docker.bash](${{ env.BASE_URL }}/docker.bash) |
+          | `docker.fish`       | [docker.fish](${{ env.BASE_URL }}/docker.fish) |
+          | `_docker.zsh`       | [_docker.zsh](${{ env.BASE_URL }}/_docker.zsh) |
+          | `*.loongarch64.rpm` | See release assets                             |
           
           Each file has a corresponding `.asc` detached GPG signature.
           
