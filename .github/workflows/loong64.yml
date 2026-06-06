@@ -103,6 +103,11 @@ jobs:
       - name: Install QEMU binfmt for loong64
         run: |
           docker run --privileged --rm ghcr.io/loong64/binfmt --install all
+      - name: Print docker version
+        working-directory: cli
+        run: |
+          ./build/docker -v
+          ./build/docker version
       - name: Generate shell completions
         working-directory: cli
         run: |
