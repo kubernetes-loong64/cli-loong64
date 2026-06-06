@@ -156,10 +156,12 @@ jobs:
             /tmp/installed-packages.txt
             /tmp/os-release.txt
 
-  rpm:
+  rpm-anolis:
     needs: build
     runs-on: ubuntu-latest
     container: openanolis/anolisos:23
+    outputs:
+      ANOLIS_RPM_NAME: ${{ steps.rpm-file.outputs.ANOLIS_RPM_NAME }}
     permissions:
       contents: read
     env:
@@ -174,7 +176,11 @@ jobs:
       - name: Extract version
         run: |
           VERSION=$(echo $CLI_BRANCH | awk -F'v' '{print $2}')
+          echo "VERSION=$VERSION"
           echo "VERSION=$VERSION" >> ${GITHUB_ENV}
+          DIST=$(rpm --eval '%{dist}')
+          echo "DIST=$DIST"
+          echo "DIST=$DIST" >> ${GITHUB_ENV}
       - name: Install build tools
         run: yum install -y rpm-build rpmdevtools
       - name: Download binaries
@@ -201,29 +207,36 @@ jobs:
             --define "version ${{ env.VERSION }}" \
             --define "release ${{ env.RELEASE }}"
           mkdir -p rpms
+          find ~/rpmbuild/RPMS -name '*.rpm'
           find ~/rpmbuild/RPMS -name '*.rpm' -exec cp -t rpms {} +
       - name: List RPM files
+        id: rpm-file
         run: |
+          ANOLIS_RPM_NAME=docker-ce-cli-${{ env.VERSION }}-${{ env.RELEASE }}${{ env.DIST }}.${{ env.ARCH }}.rpm
+          echo "ANOLIS_RPM_NAME=$ANOLIS_RPM_NAME"
+          echo "ANOLIS_RPM_NAME=$ANOLIS_RPM_NAME" >> $GITHUB_OUTPUT
+          echo "ANOLIS_RPM_NAME=$ANOLIS_RPM_NAME" >> $GITHUB_ENV
           echo "=== RPM checksums ==="
-          sha256sum rpms/*.rpm
+          sha256sum rpms/$ANOLIS_RPM_NAME
           echo "=== RPM info ==="
-          rpm -qpi rpms/*.rpm
-          rpm2cpio rpms/*.rpm | cpio -it
+          rpm -qpi rpms/$ANOLIS_RPM_NAME
+          rpm2cpio rpms/$ANOLIS_RPM_NAME | cpio -it
       - name: Upload RPM
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: cli-loong64-rpm
           path: |
-            rpms/*.rpm
+            rpms/${{ env.ANOLIS_RPM_NAME }}
 
   release:
     if: startsWith(github.ref, 'refs/tags/')
-    needs: [ rpm ]
+    needs: [ rpm-anolis ]
     runs-on: ubuntu-latest
     permissions:
       contents: write
     env:
       BASE_URL: https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}
+      ANOLIS_RPM_NAME: ${{ needs.rpm-anolis.outputs.ANOLIS_RPM_NAME }}
     steps:
       - name: Download binaries
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
@@ -250,13 +263,13 @@ jobs:
           cat > release-body.md <<'BODYEOF'
           ## Artifacts
           
-          | File                | Download                                       |
-          |---------------------|------------------------------------------------|
-          | `docker`            | [docker](${{ env.BASE_URL }}/docker)           |
-          | `docker.bash`       | [docker.bash](${{ env.BASE_URL }}/docker.bash) |
-          | `docker.fish`       | [docker.fish](${{ env.BASE_URL }}/docker.fish) |
-          | `_docker.zsh`       | [_docker.zsh](${{ env.BASE_URL }}/_docker.zsh) |
-          | `*.loongarch64.rpm` | See release assets                             |
+          | File                         | Download                                                                     |
+          |------------------------------|------------------------------------------------------------------------------|
+          | `docker`                     | [docker](${{ env.BASE_URL }}/docker)                                         |
+          | `docker.bash`                | [docker.bash](${{ env.BASE_URL }}/docker.bash)                               |
+          | `docker.fish`                | [docker.fish](${{ env.BASE_URL }}/docker.fish)                               |
+          | `_docker.zsh`                | [_docker.zsh](${{ env.BASE_URL }}/_docker.zsh)                               |
+          | `${{ env.ANOLIS_RPM_NAME }}` | [${{ env.ANOLIS_RPM_NAME }}](${{ env.BASE_URL }}/${{ env.ANOLIS_RPM_NAME }}) |
           
           Each file has a corresponding `.asc` detached GPG signature.
           
@@ -264,6 +277,10 @@ jobs:
           # Binary
           curl -LO ${{ env.BASE_URL }}/docker
           curl -LO ${{ env.BASE_URL }}/docker.asc
+          
+          # RPM
+          curl -LO ${{ env.BASE_URL }}/${{ env.ANOLIS_RPM_NAME }}
+          curl -LO ${{ env.BASE_URL }}/${{ env.ANOLIS_RPM_NAME }}.asc
           
           # Shell completions
           curl -LO ${{ env.BASE_URL }}/docker.bash
