@@ -168,6 +168,7 @@ jobs:
       RAW_VERSION: ${{ needs.build.outputs.RAW_VERSION }}
       CLI_BRANCH: ${{ needs.build.outputs.CLI_BRANCH }}
       RELEASE: ${{ needs.build.outputs.RELEASE }}
+      ARCH: loongarch64
     steps:
       - name: Install gzip
         run: yum install -y gzip
@@ -194,8 +195,6 @@ jobs:
           name: cli-loong64-completions
           path: artifacts/completions
       - name: Build RPM
-        env:
-          ARCH: loongarch64
         run: |
           rm -rf ~/rpmbuild
           rpmdev-setuptree
