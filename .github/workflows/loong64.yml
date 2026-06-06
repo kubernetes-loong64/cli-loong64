@@ -140,21 +140,21 @@ jobs:
           name: cli-loong64-completions
           path: |
             cli/completions/*
-      - name: Export installed packages
-        run: |
-          dpkg -l > /tmp/installed-packages.txt
-          cat /tmp/installed-packages.txt
       - name: Export system version
         run: |
-          cat /etc/os-release > /tmp/os-release.txt
-          cat /tmp/os-release.txt
+          cat /etc/os-release > /tmp/build-os-release.txt
+          cat /tmp/build-os-release.txt
+      - name: Export installed packages
+        run: |
+          dpkg -l > /tmp/build-installed-packages.txt
+          cat /tmp/build-installed-packages.txt
       - name: Upload system info
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: cli-loong64-system-info
           path: |
-            /tmp/installed-packages.txt
-            /tmp/os-release.txt
+            /tmp/build-installed-packages.txt
+            /tmp/build-os-release.txt
 
   rpm-anolis:
     needs: build
@@ -257,6 +257,21 @@ jobs:
           name: cli-loong64-rpm
           path: |
             rpms/${{ env.ANOLIS_RPM_NAME }}
+      - name: Export system version
+        run: |
+          cat /etc/os-release > /tmp/rpm-anolis-os-release.txt
+          cat /tmp/rpm-anolis-os-release.txt
+      - name: Export installed packages
+        run: |
+          rpm -qa --queryformat '%{NAME}\t%{VERSION}\t%{RELEASE}\t%{ARCH}\n' | column -t -s $'\t' | sort -f > /tmp/rpm-anolis-installed-packages-rpm.txt
+          cat /tmp/rpm-anolis-installed-packages-rpm.txt
+      - name: Upload system info
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: cli-loong64-rpm-system-info
+          path: |
+            /tmp/rpm-anolis-installed-packages-rpm.txt
+            /tmp/rpm-anolis-os-release.txt
 
   release:
     if: startsWith(github.ref, 'refs/tags/')
@@ -277,6 +292,11 @@ jobs:
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: cli-loong64-system-info
+          path: loong64-artifacts
+      - name: Download RPM system info
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: cli-loong64-rpm-system-info
           path: loong64-artifacts
       - name: Download shell completions
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
