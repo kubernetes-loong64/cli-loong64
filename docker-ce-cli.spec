@@ -6,8 +6,6 @@ License: Apache-2.0
 URL: https://github.com/kubernetes-loong64/cli-loong64
 BugURL: https://github.com/kubernetes-loong64/cli-loong64/issues
 Packager: 徐晓伟 <xuxiaowei@xuxiaowei.com.cn>
-%define ref_name release-loong64-v%{version}
-Source0: https://github.com/kubernetes-loong64/cli-loong64/archive/refs/tags/%{ref_name}.tar.gz
 
 # Disable strip for cross-compiled loongarch64 binary
 %define __strip /bin/true
