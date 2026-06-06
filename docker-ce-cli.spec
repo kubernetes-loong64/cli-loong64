@@ -7,7 +7,8 @@ URL: https://github.com/kubernetes-loong64/cli-loong64
 BugURL: https://github.com/kubernetes-loong64/cli-loong64/issues
 Packager: 徐晓伟 <xuxiaowei@xuxiaowei.com.cn>
 
-# Disable strip for cross-compiled loongarch64 binary
+# Disable strip and build-id links for cross-compiled loongarch64 binary
+%global _build_id_links none
 %define __strip /bin/true
 
 %description
