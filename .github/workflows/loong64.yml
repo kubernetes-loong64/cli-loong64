@@ -275,15 +275,118 @@ jobs:
             /tmp/rpm-anolis-installed-packages-rpm.txt
             /tmp/rpm-anolis-os-release.txt
 
+  deb-debian:
+    needs: build
+    runs-on: ubuntu-latest
+    container: debian:13
+    outputs:
+      DEBIAN_DEB_NAME: ${{ steps.deb-file.outputs.DEBIAN_DEB_NAME }}
+    permissions:
+      contents: read
+    env:
+      RAW_VERSION: ${{ needs.build.outputs.RAW_VERSION }}
+      CLI_BRANCH: ${{ needs.build.outputs.CLI_BRANCH }}
+      RELEASE: ${{ needs.build.outputs.RELEASE }}
+      ARCH: loongarch64
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Install build tools
+        run: |
+          apt update
+          apt install -y file
+      - name: Extract version
+        run: |
+          VERSION=$(echo $CLI_BRANCH | awk -F'v' '{print $2}')
+          echo "VERSION=$VERSION"
+          echo "VERSION=$VERSION" >> ${GITHUB_ENV}
+      - name: Download binaries
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: cli-loong64-binaries
+          path: artifacts
+      - name: Download shell completions
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: cli-loong64-completions
+          path: artifacts/completions
+      - name: Build DEB
+        run: |
+          PKG_ROOT=$(mktemp -d)
+          mkdir -p $PKG_ROOT/usr/bin
+          mkdir -p $PKG_ROOT/usr/share/bash-completion/completions
+          mkdir -p $PKG_ROOT/usr/share/fish/vendor_completions.d
+          mkdir -p $PKG_ROOT/usr/share/zsh/site-functions
+          mkdir -p $PKG_ROOT/usr/share/doc/docker-ce-cli
+          mkdir -p $PKG_ROOT/DEBIAN
+
+          install -m 755 artifacts/docker $PKG_ROOT/usr/bin/docker
+          install -m 644 artifacts/completions/docker.bash $PKG_ROOT/usr/share/bash-completion/completions/docker
+          install -m 644 artifacts/completions/docker.fish $PKG_ROOT/usr/share/fish/vendor_completions.d/docker.fish
+          install -m 644 artifacts/completions/_docker.zsh $PKG_ROOT/usr/share/zsh/site-functions/_docker
+          install -m 644 LICENSE $PKG_ROOT/usr/share/doc/docker-ce-cli/copyright
+
+          cat > $PKG_ROOT/DEBIAN/control << EOF
+          Package: docker-ce-cli
+          Version: ${{ env.VERSION }}-${{ env.RELEASE }}
+          Architecture: ${{ env.ARCH }}
+          Maintainer: 徐晓伟 <xuxiaowei@xuxiaowei.com.cn>
+          Description: Docker CLI (loong64)
+           Docker CLI binary for the loong64 (LoongArch) architecture.
+          Homepage: https://github.com/kubernetes-loong64/cli-loong64
+          Section: admin
+          Priority: optional
+          EOF
+
+          mkdir -p debs
+          dpkg-deb --build $PKG_ROOT debs/
+
+          find debs -name '*.deb'
+      - name: List DEB files
+        id: deb-file
+        run: |
+          DEBIAN_DEB_NAME=docker-ce-cli_${{ env.VERSION }}-${{ env.RELEASE }}_${{ env.ARCH }}.deb
+          echo "DEBIAN_DEB_NAME=$DEBIAN_DEB_NAME"
+          echo "DEBIAN_DEB_NAME=$DEBIAN_DEB_NAME" >> $GITHUB_OUTPUT
+          echo "DEBIAN_DEB_NAME=$DEBIAN_DEB_NAME" >> $GITHUB_ENV
+          echo "=== DEB file name: $DEBIAN_DEB_NAME ==="
+          sha256sum debs/$DEBIAN_DEB_NAME
+          echo "=== DEB info ==="
+          dpkg --info debs/$DEBIAN_DEB_NAME
+          echo "=== DEB contents ==="
+          dpkg --contents debs/$DEBIAN_DEB_NAME
+      - name: Upload DEB
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: cli-loong64-deb
+          path: |
+            debs/${{ env.DEBIAN_DEB_NAME }}
+      - name: Export system version
+        run: |
+          cat /etc/os-release > /tmp/deb-debian-os-release.txt
+          cat /tmp/deb-debian-os-release.txt
+      - name: Export installed packages
+        run: |
+          dpkg -l > /tmp/deb-debian-installed-packages-packages.txt
+          cat /tmp/deb-debian-installed-packages-packages.txt
+      - name: Upload system info
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: cli-loong64-deb-system-info
+          path: |
+            /tmp/deb-debian-installed-packages-packages.txt
+            /tmp/deb-debian-os-release.txt
+
   release:
     if: startsWith(github.ref, 'refs/tags/')
-    needs: [ rpm-anolis ]
+    needs: [ rpm-anolis, deb-debian ]
     runs-on: ubuntu-latest
     permissions:
       contents: write
     env:
       BASE_URL: https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}
       ANOLIS_RPM_NAME: ${{ needs.rpm-anolis.outputs.ANOLIS_RPM_NAME }}
+      DEBIAN_DEB_NAME: ${{ needs.deb-debian.outputs.DEBIAN_DEB_NAME }}
     steps:
       - name: Download binaries
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
@@ -300,6 +403,11 @@ jobs:
         with:
           name: cli-loong64-rpm-system-info
           path: loong64-artifacts
+      - name: Download DEB system info
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: cli-loong64-deb-system-info
+          path: loong64-artifacts
       - name: Download shell completions
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -309,6 +417,11 @@ jobs:
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: cli-loong64-rpm
+          path: loong64-artifacts
+      - name: Download DEB
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: cli-loong64-deb
           path: loong64-artifacts
       - name: Import GPG key
         run: |
@@ -334,6 +447,7 @@ jobs:
           | `docker.fish`                | [docker.fish](${{ env.BASE_URL }}/docker.fish)                               |
           | `_docker.zsh`                | [_docker.zsh](${{ env.BASE_URL }}/_docker.zsh)                               |
           | `${{ env.ANOLIS_RPM_NAME }}` | [${{ env.ANOLIS_RPM_NAME }}](${{ env.BASE_URL }}/${{ env.ANOLIS_RPM_NAME }}) |
+          | `${{ env.DEBIAN_DEB_NAME }}` | [${{ env.DEBIAN_DEB_NAME }}](${{ env.BASE_URL }}/${{ env.DEBIAN_DEB_NAME }}) |
           
           Each file has a corresponding `.asc` detached GPG signature.
           
@@ -342,9 +456,13 @@ jobs:
           curl -LO ${{ env.BASE_URL }}/docker
           curl -LO ${{ env.BASE_URL }}/docker.asc
           
-          # RPM
+          # RPM (Anolis)
           curl -LO ${{ env.BASE_URL }}/${{ env.ANOLIS_RPM_NAME }}
           curl -LO ${{ env.BASE_URL }}/${{ env.ANOLIS_RPM_NAME }}.asc
+          
+          # DEB (Debian)
+          curl -LO ${{ env.BASE_URL }}/${{ env.DEBIAN_DEB_NAME }}
+          curl -LO ${{ env.BASE_URL }}/${{ env.DEBIAN_DEB_NAME }}.asc
           
           # Shell completions
           curl -LO ${{ env.BASE_URL }}/docker.bash
