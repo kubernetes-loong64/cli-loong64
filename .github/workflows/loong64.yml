@@ -472,6 +472,9 @@ jobs:
         with:
           name: cli-loong64-deb
           path: loong64-artifacts
+      - name: List release artifacts
+        run: |
+          find loong64-artifacts -type f
       - name: Import GPG key
         run: |
           export LANG=C.UTF-8
