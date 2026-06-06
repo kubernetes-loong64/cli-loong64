@@ -366,6 +366,7 @@ jobs:
           echo "GPG_KEY_ID=$GPG_KEY_ID" >> $GITHUB_ENV
       - name: Sign DEB
         run: |
+          export LANG=C.UTF-8
           echo "=== Signing DEB with GPG key: $GPG_KEY_ID ==="
           gpg --detach-sign --armor --digest-algo sha256 -u "${GPG_KEY_ID}" debs/$DEBIAN_DEB_NAME
           echo "=== Verifying DEB signature ==="
