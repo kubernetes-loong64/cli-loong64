@@ -372,8 +372,6 @@ jobs:
           dpkg-deb --build $PKG_ROOT debs/
 
           find debs -name '*.deb'
-
-          DEBIAN_DEB_NAME=docker-ce-cli_${{ env.VERSION }}-${{ env.RELEASE }}_${{ env.ARCH }}.deb
       - name: List DEB files
         id: deb-file
         run: |
